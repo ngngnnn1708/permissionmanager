@@ -1,0 +1,52 @@
+{% extends "layout.html" %}
+{% block title %}Gán Vai Trò cho Người Dùng{% endblock %}
+{% block content %}
+    <h2>Danh sách Vai Trò theo Người Dùng</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID Người Dùng</th>
+                <th>Tên Người Dùng</th>
+                <th>Danh Sách Vai Trò</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in user_roles %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.name }}</td>
+                <td>
+                    {% for role in user.roles %}
+                        <span class="badge bg-primary">{{ role.name }}</span>
+                    {% endfor %}
+                </td>
+                <td>
+                    <a href="/user-roles/edit/{{ user.id }}" class="btn btn-warning btn-sm">Chỉnh sửa</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Gán Vai Trò cho Người Dùng</h2>
+    <form action="/user-roles/assign" method="POST">
+        <div class="mb-3">
+            <label class="form-label">Chọn Người Dùng:</label>
+            <select name="user_id" class="form-control">
+                {% for user in users %}
+                    <option value="{{ user.id }}">{{ user.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Chọn Vai Trò:</label>
+            <select name="role_id" class="form-control">
+                {% for role in roles %}
+                    <option value="{{ role.id }}">{{ role.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Gán Vai Trò</button>
+    </form>
+{% endblock %}

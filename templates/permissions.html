@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}Quản lý Quyền{% endblock %}
+{% block content %}
+    <h2>Danh sách Quyền</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên</th>
+                <th>Mô tả</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for permission in permissions %}
+            <tr>
+                <td>{{ permission.id }}</td>
+                <td>{{ permission.name }}</td>
+                <td>{{ permission.description }}</td>
+                <td>
+                        <!-- Nút Sửa -->
+                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editPermissionModal{{ permission.id }}">Sửa</button>
+                        
+                        <!-- Nút Xóa -->
+                        <a href="{{ url_for('delete_permission', permission_id=permission.id) }}" class="btn btn-danger btn-sm">Xóa</a>
+
+                        <!-- Modal chỉnh sửa quyền -->
+                        <div class="modal fade" id="editPermissionModal{{ permission.id }}" tabindex="-1" aria-labelledby="editPermissionModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Chỉnh sửa Quyền</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('update_permission', permission_id=permission.id) }}">
+                                        <div class="modal-body">
+                                            <input type="hidden" name="id" value="{{ permission.id }}">
+                                            <div class="mb-3">
+                                                <label class="form-label">Tên</label>
+                                                <input type="text" class="form-control" name="name" value="{{ permission.name }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Mô tả</label>
+                                                <input type="text" class="form-control" name="description" value="{{ permission.description }}">
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                            <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    <h2>Thêm Quyền</h2>
+    <form action="/permissions/add" method="POST">
+        <div class="mb-3">
+            <label class="form-label">Tên:</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mô tả:</label>
+            <input type="text" name="description" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success">Thêm</button>
+    </form>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Danh sách Quyền theo Vai Trò</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID Vai Trò</th>
+                <th>Tên Vai Trò</th>
+                <th>Danh Sách Quyền</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="role-permissions-list">
+            <!-- Dữ liệu sẽ được thêm bằng JavaScript -->
+        </tbody>
+    </table>
+
+    <h3>Gán Quyền cho Vai Trò</h3>
+    <form id="assign-permission-form">
+        <div class="mb-3">
+            <label for="role" class="form-label">Chọn Vai Trò:</label>
+            <select id="role" class="form-select" required>
+                <option value="">-- Chọn Vai Trò --</option>
+            </select>
+        </div>
+        <div class="mb-3">
+            <label for="permission" class="form-label">Chọn Quyền:</label>
+            <select id="permission" class="form-select" required>
+                <option value="">-- Chọn Quyền --</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-success">Gán Quyền</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    loadRoles();
+    loadPermissions();
+    loadRolePermissions();
+
+    document.getElementById("assign-permission-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+        assignPermission();
+    });
+});
+
+function loadRoles() {
+    fetch('/api/get_roles')
+        .then(response => response.json())
+        .then(data => {
+            let roleSelect = document.getElementById("role");
+            roleSelect.innerHTML = '<option value="">-- Chọn Vai Trò --</option>';
+            data.forEach(role => {
+                let option = document.createElement("option");
+                option.value = role.id;
+                option.textContent = role.name;
+                roleSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Lỗi tải danh sách vai trò:", error));
+}
+
+function loadPermissions() {
+    fetch('/api/get_permissions')
+        .then(response => response.json())
+        .then(data => {
+            let permissionSelect = document.getElementById("permission");
+            permissionSelect.innerHTML = '<option value="">-- Chọn Quyền --</option>';
+            data.forEach(permission => {
+                let option = document.createElement("option");
+                option.value = permission.id;
+                option.textContent = permission.name;
+                permissionSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Lỗi tải danh sách quyền:", error));
+}
+
+function loadRolePermissions() {
+    fetch('/api/get_role_permissions')
+        .then(response => response.json())
+        .then(data => {
+            let tbody = document.getElementById("role-permissions-list");
+            tbody.innerHTML = "";
+            data.forEach(item => {
+                let row = `<tr>
+                    <td>${item.role_id}</td>
+                    <td>${item.role_name}</td>
+                    <td>${item.permissions.join(", ")}</td>
+                    <td><button class='btn btn-warning'>Chỉnh sửa</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        })
+        .catch(error => console.error("Lỗi tải danh sách quyền theo vai trò:", error));
+}
+
+function assignPermission() {
+    let role_id = document.getElementById("role").value;
+    let permission_id = document.getElementById("permission").value;
+    
+    if (!role_id || !permission_id) {
+        alert("Vui lòng chọn vai trò và quyền!");
+        return;
+    }
+    
+    fetch('/api/assign_permission', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({role_id: role_id, permission_id: permission_id})
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        loadRolePermissions(); // Cập nhật danh sách sau khi gán quyền
+    })
+    .catch(error => console.error("Lỗi khi gán quyền:", error));
+}
+</script>
+{% endblock %}

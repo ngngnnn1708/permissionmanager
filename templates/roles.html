@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}Quản lý Vai trò{% endblock %}
+{% block content %}
+    <h2>Danh sách Vai trò</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên</th>
+                <th>Mô tả</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for role in roles %}
+            <tr>
+                <td>{{ role.id }}</td>
+                <td>{{ role.name }}</td>
+                <td>{{ role.description }}</td>
+                <td>
+                    <!-- Nút Sửa -->
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editRoleModal{{ role.id }}">Sửa</button>
+                    
+                    <!-- Nút Xóa -->
+                    <a href="{{ url_for('delete_role', role_id=role.id) }}" class="btn btn-danger btn-sm">Xóa</a>
+
+                    <!-- Modal chỉnh sửa vai trò -->
+                    <div class="modal fade" id="editRoleModal{{ role.id }}" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Chỉnh sửa Vai trò</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('update_role', role_id=role.id) }}">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="id" value="{{ role.id }}">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tên</label>
+                                            <input type="text" class="form-control" name="name" value="{{ role.name }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Mô tả</label>
+                                            <input type="text" class="form-control" name="description" value="{{ role.description }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                        <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>Thêm Vai trò</h2>
+    <form action="/roles/add" method="POST">
+        <div class="mb-3">
+            <label class="form-label">Tên:</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mô tả:</label>
+            <input type="text" name="description" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success">Thêm</button>
+    </form>
+{% endblock %}

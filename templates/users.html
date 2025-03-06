@@ -1,0 +1,73 @@
+{% extends "layout.html" %}
+{% block title %}Quản lý Người dùng{% endblock %}
+{% block content %}
+    <h2>Danh sách Người dùng</h2>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tên</th>
+                <th>Mô tả</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.description }}</td>
+                <td>
+                    <!-- Nút Sửa -->
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">Sửa</button>
+                    
+                    <!-- Nút Xóa -->
+                    <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Xóa</a>
+
+                    <!-- Modal sửa người dùng -->
+                    <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Chỉnh sửa Người dùng</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('update_user', user_id=user.id) }}">
+                                    <div class="modal-body">
+                                        <input type="hidden" name="id" value="{{ user.id }}">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tên</label>
+                                            <input type="text" class="form-control" name="name" value="{{ user.name }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Mô tả</label>
+                                            <input type="text" class="form-control" name="description" value="{{ user.description }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                        <button type="submit" class="btn btn-primary">Cập nhật</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h2>Thêm Người dùng</h2>
+    <form action="/users/add" method="POST">
+        <div class="mb-3">
+            <label class="form-label">Tên:</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mô tả:</label>
+            <input type="text" name="description" class="form-control">
+        </div>
+        <button type="submit" class="btn btn-success">Thêm</button>
+    </form>
+{% endblock %}
