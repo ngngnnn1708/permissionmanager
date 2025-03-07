@@ -23,6 +23,7 @@ def index():
 def get_permissions():
     pm = PermissionManager()
     permissions = pm.list_permission()
+
     pm.close()
     return render_template('permissions.html', permissions=permissions)
 
@@ -131,7 +132,7 @@ def api_get_roles():
 @app.route('/api/get_permissions', methods=['GET'])
 def api_get_permissions():
     pm = PermissionManager()
-    permissions = pm.list_permissions()
+    permissions = pm.list_permission()
     pm.close()
     return jsonify(permissions)
 
@@ -142,11 +143,23 @@ def get_role_permissions():
     rpm.close()
     return render_template('role_permissions.html', role_permissions=role_permissions)
 
+@app.route('/api/assign_permission', methods=['POST'])
+def api_assign_permission():
+    data = request.json  # Sử dụng request.json thay vì request.form
+    if not data or 'role_id' not in data or 'permission_id' not in data:
+        return jsonify({"message": "Thiếu dữ liệu role_id hoặc permission_id"}), 400
+
+    rpm = RolePermissionManager()
+    result = rpm.assign_permission_to_role(int(data['role_id']), int(data['permission_id']))
+    rpm.close()
+    
+    return jsonify(result), 200
+
 @app.route('/role-permissions/assign', methods=['POST'])
 def assign_permission_to_role():
     data = request.form
     rpm = RolePermissionManager()
-    result = rpm.assign_permission(int(data['role_id']), int(data['permission_id']))
+    result = rpm.assign_permission_to_role(int(data['role_id']), int(data['permission_id']))
     rpm.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_role_permissions'))
@@ -155,7 +168,7 @@ def assign_permission_to_role():
 def remove_permission_from_role():
     data = request.form
     rpm = RolePermissionManager()
-    result = rpm.remove_permission(int(data['role_id']), int(data['permission_id']))
+    result = rpm.remove_permission_from_role(int(data['role_id']), int(data['permission_id']))
     rpm.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_role_permissions'))

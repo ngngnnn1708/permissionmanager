@@ -23,7 +23,7 @@ class RolePermissionManager:
         if not self.conn:
             return {"message": "Lỗi kết nối CSDL!", "status": "error"}
         try:
-            sql = "SELECT role_id, permission_id FROM mor_role_permission"
+            sql = "SELECT mor_role_id, mor_permission_id FROM mor_role_permission"
             self.cursor.execute(sql)
             data = self.cursor.fetchall()
             return data if data else []

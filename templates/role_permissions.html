@@ -84,12 +84,19 @@ function loadRolePermissions() {
         .then(data => {
             let tbody = document.getElementById("role-permissions-list");
             tbody.innerHTML = "";
+
             data.forEach(item => {
+                let permissionsList = item.permissions ? item.permissions.map(p => p.name).join(", ") : "Không có quyền";
+
                 let row = `<tr>
                     <td>${item.role_id}</td>
                     <td>${item.role_name}</td>
-                    <td>${item.permissions.join(", ")}</td>
-                    <td><button class='btn btn-warning'>Chỉnh sửa</button></td>
+                    <td>${permissionsList}</td>
+                    <td>
+                        ${item.permissions.map(p => 
+                            `<button class='btn btn-danger btn-sm' onclick="removePermission(${item.role_id}, ${p.id})">Xóa ${p.name}</button>`
+                        ).join(" ")}
+                    </td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
@@ -108,15 +115,51 @@ function assignPermission() {
     
     fetch('/api/assign_permission', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({role_id: role_id, permission_id: permission_id})
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role_id: parseInt(role_id), permission_id: parseInt(permission_id) })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.message); });
+        }
+        return response.json();
+    })
     .then(data => {
         alert(data.message);
         loadRolePermissions(); // Cập nhật danh sách sau khi gán quyền
     })
-    .catch(error => console.error("Lỗi khi gán quyền:", error));
+    .catch(error => {
+        console.error("Lỗi khi gán quyền:", error);
+        alert("Lỗi khi gán quyền: " + error.message);
+    });
+}
+
+function removePermission(role_id, permission_id) {
+    if (!confirm("Bạn có chắc muốn xóa quyền này khỏi vai trò không?")) return;
+
+    fetch('/api/remove_permission', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ role_id: parseInt(role_id), permission_id: parseInt(permission_id) })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.message); });
+        }
+        return response.json();
+    })
+    .then(data => {
+        alert(data.message);
+        loadRolePermissions(); // Cập nhật danh sách sau khi xóa quyền
+    })
+    .catch(error => {
+        console.error("Lỗi khi xóa quyền:", error);
+        alert("Lỗi khi xóa quyền: " + error.message);
+    });
 }
 </script>
 {% endblock %}
