@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}Gán Vai Trò cho Người Dùng{% endblock %}
 {% block content %}
+<div class="container mt-4">
     <h2>Danh sách Vai Trò theo Người Dùng</h2>
     <table class="table table-bordered">
         <thead>
@@ -17,12 +18,42 @@
                 <td>{{ user.id }}</td>
                 <td>{{ user.name }}</td>
                 <td>
-                    {% for role in user.roles %}
-                        <span class="badge bg-primary">{{ role.name }}</span>
-                    {% endfor %}
+                    {% if user.roles %}
+                        {% for role in user.roles %}
+                            <span class="badge bg-primary">{{ role.name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        Không có vai trò
+                    {% endif %}
                 </td>
                 <td>
-                    <a href="/user-roles/edit/{{ user.id }}" class="btn btn-warning btn-sm">Chỉnh sửa</a>
+                    {% if user.roles %}
+                        <div class="dropdown">
+                            <button class="btn btn-danger btn-sm dropdown-toggle"
+                                    type="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                Xóa Vai Trò
+                            </button>
+                            <ul class="dropdown-menu">
+                                {% for role in user.roles %}
+                                <li>
+                                    <form action="{{ url_for('remove_role_from_user') }}"
+                                          method="POST"
+                                          style="display: inline;">
+                                        <input type="hidden" name="user_id" value="{{ user.id }}">
+                                        <input type="hidden" name="role_id" value="{{ role.id }}">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            {{ role.name }}
+                                        </button>
+                                    </form>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% else %}
+                        Không có vai trò
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
@@ -30,18 +61,20 @@
     </table>
 
     <h2>Gán Vai Trò cho Người Dùng</h2>
-    <form action="/user-roles/assign" method="POST">
+    <form action="{{ url_for('assign_role_to_user') }}" method="POST">
         <div class="mb-3">
-            <label class="form-label">Chọn Người Dùng:</label>
-            <select name="user_id" class="form-control">
+            <label for="user" class="form-label">Chọn Người Dùng:</label>
+            <select id="user" name="user_id" class="form-select" required>
+                <option value="">-- Chọn Người Dùng --</option>
                 {% for user in users %}
                     <option value="{{ user.id }}">{{ user.name }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="mb-3">
-            <label class="form-label">Chọn Vai Trò:</label>
-            <select name="role_id" class="form-control">
+            <label for="role" class="form-label">Chọn Vai Trò:</label>
+            <select id="role" name="role_id" class="form-select" required>
+                <option value="">-- Chọn Vai Trò --</option>
                 {% for role in roles %}
                     <option value="{{ role.id }}">{{ role.name }}</option>
                 {% endfor %}
@@ -49,4 +82,5 @@
         </div>
         <button type="submit" class="btn btn-success">Gán Vai Trò</button>
     </form>
+</div>
 {% endblock %}

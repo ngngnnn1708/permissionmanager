@@ -48,24 +48,6 @@ class PermissionManager:
         except mysql.connector.Error as err:
             return {"message": f"Lỗi: {err}", "status": "error"}
 
-    def delete_permission(self, permission_id):
-        """Xóa quyền trong bảng mor_permission"""
-        if not self.conn:
-            return {"message": "Lỗi kết nối CSDL!", "status": "error"}
-        try:
-            # Kiểm tra quyền có tồn tại hay không
-            check_sql = "SELECT id FROM mor_permission WHERE id = %s"
-            self.cursor.execute(check_sql, (permission_id,))
-            if not self.cursor.fetchone():
-                return {"message": "Không tìm thấy quyền!", "status": "error"}
-
-            sql = "DELETE FROM mor_permission WHERE id = %s"
-            self.cursor.execute(sql, (permission_id,))
-            self.conn.commit()
-            return {"message": "Xóa quyền thành công!", "status": "success"}
-        except mysql.connector.Error as err:
-            return {"message": f"Lỗi: {err}", "status": "error"}
-
     def update_permission(self, permission_id, name, description):
         """Cập nhật thông tin quyền theo ID"""
         if not self.conn:
@@ -83,6 +65,33 @@ class PermissionManager:
             return {"message": "Cập nhật quyền thành công!", "status": "success"}
         except mysql.connector.Error as err:
             return {"message": f"Lỗi: {err}", "status": "error"}
+        
+    def delete_permission_with_dependencies(self, permission_id):
+        """Xóa quyền và tất cả các tham chiếu trong bảng mor_role_permission."""
+        if not self.conn:
+            return {"message": "Lỗi kết nối CSDL!", "status": "error"}
+        try:
+            # Kiểm tra xem quyền có tồn tại không
+            check_sql = "SELECT id FROM mor_permission WHERE id = %s"
+            self.cursor.execute(check_sql, (permission_id,))
+            if not self.cursor.fetchone():
+                return {"message": "Không tìm thấy quyền!", "status": "error"}
+
+            # Xóa các dòng ở bảng con (mor_role_permission)
+            sql_delete_refs = "DELETE FROM mor_role_permission WHERE mor_permission_id = %s"
+            self.cursor.execute(sql_delete_refs, (permission_id,))
+            self.conn.commit()  # commit ngay sau khi xóa các dòng ở bảng con
+
+            # Sau đó xóa bản ghi ở bảng cha (mor_permission)
+            sql_delete_perm = "DELETE FROM mor_permission WHERE id = %s"
+            self.cursor.execute(sql_delete_perm, (permission_id,))
+            self.conn.commit()
+
+            return {"message": "Xóa quyền và các tham chiếu thành công!", "status": "success"}
+        except mysql.connector.Error as err:
+            self.conn.rollback()
+            return {"message": f"Lỗi: {err}", "status": "error"}
+
 
     def close(self):
         """Đóng kết nối"""

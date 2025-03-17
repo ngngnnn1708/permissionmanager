@@ -23,7 +23,6 @@ def index():
 def get_permissions():
     pm = PermissionManager()
     permissions = pm.list_permission()
-
     pm.close()
     return render_template('permissions.html', permissions=permissions)
 
@@ -36,7 +35,7 @@ def add_permission():
     flash(result['message'], result['status'])
     return redirect(url_for('get_permissions'))
 
-@app.route('/permissions/update', methods=['POST'])
+@app.route('/permission/update', methods=['POST'])
 def update_permission():
     data = request.form
     pm = PermissionManager()
@@ -45,13 +44,14 @@ def update_permission():
     flash(result['message'], result['status'])
     return redirect(url_for('get_permissions'))
 
-@app.route('/permissions/delete/<int:permission_id>')
-def delete_permission(permission_id):
+@app.route('/permissions/force-delete/<int:permission_id>')
+def force_delete_permission(permission_id):
     pm = PermissionManager()
-    result = pm.delete_permission(permission_id)
+    result = pm.delete_permission_with_dependencies(permission_id)
     pm.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_permissions'))
+
 
 # ============================ QUẢN LÝ USER ============================
 @app.route('/users', methods=['GET'])
@@ -79,13 +79,14 @@ def update_user():
     flash(result['message'], result['status'])
     return redirect(url_for('get_users'))
 
-@app.route('/users/delete/<int:user_id>')
-def delete_user(user_id):
+@app.route('/users/force-delete/<int:user_id>')
+def force_delete_user(user_id):
     um = UserManager()
-    result = um.delete_user(user_id)
+    result = um.delete_user_with_dependencies(user_id)
     um.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_users'))
+
 
 # ============================ QUẢN LÝ ROLE ============================
 @app.route('/roles', methods=['GET'])
@@ -113,10 +114,10 @@ def update_role():
     flash(result['message'], result['status'])
     return redirect(url_for('get_roles'))
 
-@app.route('/roles/delete/<int:role_id>')
-def delete_role(role_id):
+@app.route('/roles/force-delete/<int:role_id>')
+def force_delete_role(role_id):
     rm = RoleManager()
-    result = rm.delete_role(role_id)
+    result = rm.delete_role_with_dependencies(role_id)
     rm.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_roles'))
@@ -138,54 +139,145 @@ def api_get_permissions():
 
 @app.route('/role-permissions', methods=['GET'])
 def get_role_permissions():
+    # Khởi tạo các manager
     rpm = RolePermissionManager()
-    role_permissions = rpm.list_role_permissions()
-    rpm.close()
-    return render_template('role_permissions.html', role_permissions=role_permissions)
+    rm = RoleManager()
+    pm = PermissionManager()
 
-@app.route('/api/assign_permission', methods=['POST'])
-def api_assign_permission():
-    data = request.json  # Sử dụng request.json thay vì request.form
-    if not data or 'role_id' not in data or 'permission_id' not in data:
-        return jsonify({"message": "Thiếu dữ liệu role_id hoặc permission_id"}), 400
+    # Lấy dữ liệu thô
+    role_permissions_raw = rpm.list_role_permissions()   # [{mor_role_id, mor_permission_id}, ...]
+    roles = rm.list_roles()                               # [{id, name, description}, ...]
+    permissions = pm.list_permission()                    # [{id, name, description}, ...]
 
-    rpm = RolePermissionManager()
-    result = rpm.assign_permission_to_role(int(data['role_id']), int(data['permission_id']))
+    # Đóng kết nối
     rpm.close()
-    
-    return jsonify(result), 200
+    rm.close()
+    pm.close()
+
+    # Tạo dict tra cứu vai trò: key = role_id, value = {id, name, permissions: []}
+    role_permissions_dict = {}
+    for r in roles:
+        role_permissions_dict[r['id']] = {
+            "id": r['id'],
+            "name": r['name'],
+            "permissions": []  # sẽ chứa các quyền
+        }
+
+    # Tạo dict tra cứu quyền: key = permission_id, value = {id, name, ...}
+    perms_dict = {p['id']: p for p in permissions}
+
+    # Ghép danh sách quyền cho mỗi role
+    for item in role_permissions_raw:
+        role_id = item['mor_role_id']
+        perm_id = item['mor_permission_id']
+
+        # Nếu role_id và perm_id tồn tại, thêm vào danh sách
+        if role_id in role_permissions_dict and perm_id in perms_dict:
+            role_permissions_dict[role_id]['permissions'].append({
+                "id": perm_id,
+                "name": perms_dict[perm_id]['name']
+            })
+
+    # role_permissions_list là mảng final để truyền xuống template
+    role_permissions_list = list(role_permissions_dict.values())
+
+    # Render template, truyền 3 biến chính:
+    # - role_permissions_list: Dữ liệu bảng "Danh sách Quyền theo Vai Trò"
+    # - roles: Dữ liệu dropdown chọn vai trò
+    # - permissions: Dữ liệu dropdown chọn quyền
+    return render_template(
+        'role_permissions.html',
+        role_permissions_list=role_permissions_list,
+        roles=roles,
+        permissions=permissions
+    )
 
 @app.route('/role-permissions/assign', methods=['POST'])
 def assign_permission_to_role():
     data = request.form
+    role_id = int(data['role_id'])
+    permission_id = int(data['permission_id'])
+
     rpm = RolePermissionManager()
-    result = rpm.assign_permission_to_role(int(data['role_id']), int(data['permission_id']))
+    result = rpm.assign_permission_to_role(role_id, permission_id)
     rpm.close()
+
     flash(result['message'], result['status'])
     return redirect(url_for('get_role_permissions'))
 
 @app.route('/role-permissions/remove', methods=['POST'])
 def remove_permission_from_role():
     data = request.form
+    role_id = int(data['role_id'])
+    permission_id = int(data['permission_id'])
+
     rpm = RolePermissionManager()
-    result = rpm.remove_permission_from_role(int(data['role_id']), int(data['permission_id']))
+    result = rpm.remove_permission_from_role(role_id, permission_id)
     rpm.close()
+
     flash(result['message'], result['status'])
     return redirect(url_for('get_role_permissions'))
+
 
 # ============================ GÁN ROLE CHO USER ============================
 @app.route('/user-roles', methods=['GET'])
 def get_user_roles():
+    """
+    Lấy danh sách user, danh sách role, và danh sách gán (user->role),
+    sau đó gộp chúng lại để hiển thị ở user_roles.html
+    """
+    um = UserManager()
+    rm = RoleManager()
     urm = UserRoleManager()
-    user_roles = urm.list_user_roles()
+
+    # Lấy dữ liệu từ DB
+    all_users = um.list_users()           # [{id, name, ...}, ...]
+    all_roles = rm.list_roles()           # [{id, name, ...}, ...]
+    user_roles_raw = urm.list_user_roles()# [{mor_user_id, mor_role_id}, ...]
+
+    um.close()
+    rm.close()
     urm.close()
-    return render_template('user_roles.html', user_roles=user_roles)
+
+    # Tạo dict: key = user_id, value = {id, name, roles: []}
+    user_roles_dict = {}
+    for u in all_users:
+        user_roles_dict[u['id']] = {
+            'id': u['id'],
+            'name': u['name'],
+            'roles': []
+        }
+
+    # Tạo dict tra cứu role theo role_id
+    roles_dict = {r['id']: r for r in all_roles}
+
+    # Gắn các role vào user tương ứng
+    for item in user_roles_raw:
+        user_id = item['mor_user_id']
+        role_id = item['mor_role_id']
+        if user_id in user_roles_dict and role_id in roles_dict:
+            user_roles_dict[user_id]['roles'].append({
+                'id': role_id,
+                'name': roles_dict[role_id]['name']
+            })
+
+    # user_roles_list là danh sách cuối cùng để render
+    user_roles_list = list(user_roles_dict.values())
+
+    # Truyền thêm all_users và all_roles để hiển thị dropdown
+    return render_template(
+        'user_roles.html',
+        user_roles=user_roles_list,
+        users=all_users,
+        roles=all_roles
+    )
 
 @app.route('/user-roles/assign', methods=['POST'])
 def assign_role_to_user():
     data = request.form
     urm = UserRoleManager()
-    result = urm.assign_role(int(data['user_id']), int(data['role_id']))
+    # Gọi phương thức assign_role_to_user trong user_role_manager.py
+    result = urm.assign_role_to_user(int(data['user_id']), int(data['role_id']))
     urm.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_user_roles'))
@@ -194,7 +286,8 @@ def assign_role_to_user():
 def remove_role_from_user():
     data = request.form
     urm = UserRoleManager()
-    result = urm.remove_role(int(data['user_id']), int(data['role_id']))
+    # Gọi phương thức remove_role_from_user trong user_role_manager.py
+    result = urm.remove_role_from_user(int(data['user_id']), int(data['role_id']))
     urm.close()
     flash(result['message'], result['status'])
     return redirect(url_for('get_user_roles'))

@@ -14,7 +14,7 @@
         <tbody>
             {% for role in roles %}
             <tr>
-                <td>{{ role.id }}</td>
+                <td>{{ loop.index }}</td>
                 <td>{{ role.name }}</td>
                 <td>{{ role.description }}</td>
                 <td>
@@ -22,7 +22,7 @@
                     <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editRoleModal{{ role.id }}">Sửa</button>
                     
                     <!-- Nút Xóa -->
-                    <a href="{{ url_for('delete_role', role_id=role.id) }}" class="btn btn-danger btn-sm">Xóa</a>
+                    <a href="{{ url_for('force_delete_role', role_id=role.id) }}" class="btn btn-danger btn-sm">Xóa</a>
 
                     <!-- Modal chỉnh sửa vai trò -->
                     <div class="modal fade" id="editRoleModal{{ role.id }}" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">

@@ -14,7 +14,7 @@
         <tbody>
             {% for user in users %}
             <tr>
-                <td>{{ user.id }}</td>
+                <td>{{ loop.index }}</td>
                 <td>{{ user.name }}</td>
                 <td>{{ user.description }}</td>
                 <td>
@@ -22,7 +22,7 @@
                     <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user.id }}">Sửa</button>
                     
                     <!-- Nút Xóa -->
-                    <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Xóa</a>
+                    <a href="{{ url_for('force_delete_user', user_id=user.id) }}" class="btn btn-danger btn-sm">Xóa</a>
 
                     <!-- Modal sửa người dùng -->
                     <div class="modal fade" id="editUserModal{{ user.id }}" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">

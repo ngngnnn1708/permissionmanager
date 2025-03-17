@@ -19,19 +19,23 @@ class UserRoleManager:
             self.conn = None
 
     def list_user_roles(self):
-        """Liệt kê danh sách vai trò của người dùng"""
+        """
+        Lấy tất cả các dòng trong bảng mor_acl, trả về danh sách 
+        [{'mor_user_id': x, 'mor_role_id': y}, ...]
+        """
         if not self.conn:
-            return {"message": "Lỗi kết nối CSDL!", "status": "error"}
+            return []
         try:
-            sql = "SELECT user_id, role_id FROM mor_user_role"
+            sql = "SELECT mor_user_id, mor_role_id FROM mor_acl"
             self.cursor.execute(sql)
             data = self.cursor.fetchall()
             return data if data else []
         except mysql.connector.Error as err:
-            return {"message": f"Lỗi {err}", "status": "error"}
+            print(f"Lỗi: {err}")
+            return []
 
     def assign_role_to_user(self, user_id, role_id):
-        """Gán một vai trò cho một người dùng"""
+        """Gán một vai trò cho người dùng (thêm dòng vào bảng mor_acl)"""
         if not self.conn:
             return {"message": "Lỗi kết nối CSDL!", "status": "error"}
         try:
@@ -43,7 +47,7 @@ class UserRoleManager:
             return {"message": f"Lỗi: {err}", "status": "error"}
 
     def remove_role_from_user(self, user_id, role_id):
-        """Xóa vai trò khỏi người dùng"""
+        """Xóa vai trò khỏi người dùng (xóa dòng trong bảng mor_acl)"""
         if not self.conn:
             return {"message": "Lỗi kết nối CSDL!", "status": "error"}
         try:
@@ -58,7 +62,7 @@ class UserRoleManager:
             return {"message": f"Lỗi: {err}", "status": "error"}
 
     def get_roles_by_user(self, user_id):
-        """Lấy danh sách vai trò của một người dùng"""
+        """Lấy danh sách vai trò của một người dùng cụ thể"""
         if not self.conn:
             return {"message": "Lỗi kết nối CSDL!", "status": "error"}
         try:
